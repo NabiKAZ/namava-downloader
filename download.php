@@ -1,7 +1,7 @@
 <?php
 echo "Namava Downloader - version 0.1.0 - Copyright 2017\n";
 echo "By Nabi KaramAliZadeh <www.nabi.ir> <nabikaz@gmail.com>\n";
-echo "Signup here: http://www.namava.ir/\n";
+echo "Signup here: https://www.namava.ir/\n";
 echo "Project link: https://github.com/NabiKAZ/namava-downloader\n";
 echo "===========================================================\n";
 
@@ -11,7 +11,7 @@ $proxy = '';
 
 login:
 @mkdir($config_path);
-$contents = get_contents('http://www.namava.ir/');
+$contents = get_contents('https://www.namava.ir/');
 preg_match('/<span class="hidden-xs margin-left-5">\r\n(.*?)\r\n.*<\/span>/', $contents, $match);
 $fullname = trim(@$match[1]);
 if ($fullname != '') {
@@ -31,9 +31,9 @@ if ($fullname != '') {
         'Password' => $password,
         'Remember' => 'true',
         'Item1.Remember' => 'false',
-        'redirectTo' => 'http://www.namava.ir/user/profile',
+        'redirectTo' => 'https://www.namava.ir/user/profile',
     );
-    $contents = get_contents('http://www.namava.ir/Authentication/PostLogin?redirectTo=http://www.namava.ir/user/profile', $post_data);
+    $contents = get_contents('https://www.namava.ir/Authentication/PostLogin?redirectTo=https://www.namava.ir/user/profile', $post_data);
     preg_match('/<div class="alert alert-danger">(.*?)<\/div>/', $contents, $match);
     if (isset($match[1])) {
         die("Error: " . $match[1] . "\n");
@@ -49,7 +49,7 @@ echo "===========================================================\n";
 echo "Input Video ID: ";
 $video_id = trim(fgets(STDIN));
 
-$domain = 'http://www.namava.ir';
+$domain = 'https://www.namava.ir';
 $page_url = $domain . '/1/1/' . $video_id;
 $contents = get_contents($page_url);
 preg_match('/<h1.*id="post-name">(.*?)<\/h1>/', $contents, $match);
@@ -60,11 +60,11 @@ $title = $match[1];
 echo "Title: $title\n";
 
 preg_match('/<img class="img-border img-style" src="(.*?)".*\/>/', $contents, $match);
-$cover = 'http://www.namava.ir' . $match[1];
+$cover = 'https://www.namava.ir' . $match[1];
 
 echo "===========================================================\n";
 
-$contents = get_contents('http://www.namava.ir/play/' . $video_id);
+$contents = get_contents('https://www.namava.ir/play/' . $video_id);
 preg_match('/file:\'(.*?)\',/', $contents, $match);
 $m3u8_url = $match[1];
 
@@ -146,7 +146,7 @@ function get_contents($url, $data = null)
         curl_setopt($ch, CURLOPT_PROXYPORT, $proxyPort);
     }
     curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-        'Origin: http://www.namava.ir',
+        'Origin: https://www.namava.ir',
         'Accept-Encoding: gzip, deflate',
         'Accept-Language: en-US,en;q=0.9',
         'Upgrade-Insecure-Requests: 1',
@@ -154,7 +154,7 @@ function get_contents($url, $data = null)
         'Content-Type: application/x-www-form-urlencoded',
         'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
         'Cache-Control: max-age=0',
-        'Referer: http://www.namava.ir/Authentication/PostLogin?redirectTo=http%3A%2F%2Fwww.namava.ir%2Fuser%2Fprofile',
+        'Referer: https://www.namava.ir/Authentication/PostLogin?redirectTo=https%3A%2F%2Fwww.namava.ir%2Fuser%2Fprofile',
         'Proxy-Connection: keep-alive',
     ));
     if ($data !== null) {
