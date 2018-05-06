@@ -64,10 +64,16 @@ $cover = $match[1];
 
 echo "===========================================================\n";
 
-$contents = get_contents('https://www.namava.ir/play/' . $video_id);
-preg_match('/file:\'(.*?)\',/', $contents, $match);
-$m3u8_url = $match[1];
+$contents_watch = get_contents('https://www.namava.ir/play/' . $video_id);
 
+$subtitle = null;
+preg_match('/{"file":"([^}]+?)"[^}]+Farsi[^}]+?}/', $contents_watch, $match_subtitle);
+if (isset($match_subtitle[1])) {
+    $subtitle = $match_subtitle[1];
+}
+
+preg_match('/file:\'(.*?)\',/', $contents_watch, $match);
+$m3u8_url = $match[1];
 $contents = get_contents($m3u8_url);
 preg_match_all('/#.*BANDWIDTH=(.*), RESOLUTION=(.*)\r\n(.*)\r\n/', $contents, $matches);
 
@@ -102,6 +108,7 @@ $cmd = 'ffmpeg ' . $cmd_proxy . ' -i "' . $qualities[$input]['url'] . '" -y "' .
 $log_file = $base_path . $file_name . '.log';
 $info_file = $base_path . $file_name . '.info';
 $cover_file = $base_path . $file_name . '.jpg';
+$subtitle_file = $base_path . $file_name . '.srt';
 
 $info = array();
 $info['video_id'] = $video_id;
@@ -111,7 +118,14 @@ $info['bandwidth'] = $qualities[$input]['bandwidth'];
 $info['resolution'] = $qualities[$input]['resolution'];
 $info = json_encode($info);
 file_put_contents($info_file, $info);
-file_put_contents($cover_file, get_contents($cover));
+
+if ($cover) {
+	file_put_contents($cover_file, get_contents($cover));
+}
+
+if ($subtitle) {
+    file_put_contents($subtitle_file, normalize_subtitle(get_contents($subtitle)));
+}
 
 if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
     pclose(popen('start /B ' . $cmd . '<nul >nul 2>"' . $log_file . '"', 'r'));
@@ -121,6 +135,8 @@ if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
 
 echo "===========================================================\n";
 echo "Video file: $video_file\n";
+echo "Cover file: " . ($cover ? $cover_file : 'N/A') . "\n";
+echo "Subtitle file: " . ($subtitle ? $subtitle_file : 'N/A') . "\n";
 echo "Log file: $log_file\n";
 echo "Info file: $info_file\n";
 echo "Start downloading in the background...\n";
@@ -172,4 +188,20 @@ function multisort($mdarray, $mdkey, $sort = SORT_ASC)
     }
     array_multisort($dates, $sort, $mdarray);
     return $mdarray;
+}
+
+function normalize_subtitle($sub)
+{
+	$sub = str_replace("WEBVTT\r\n", '', $sub);
+
+	preg_match_all('/^(\r\n.+ --> .+)/m', $sub, $matches);
+	$matches = end($matches);
+
+	$n = 0;
+	foreach ($matches as $match) {
+		$n++;
+		$sub = str_replace($match, "\r\n" . $n . $match, $sub);
+	}
+
+	return $sub;
 }

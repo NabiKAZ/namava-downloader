@@ -105,10 +105,12 @@ Refresh:
 <table border='1' id="myTable">
     <thead>
     <tr style='font-weight:bold;'>
-		<th onclick="sortTable(<?php echo $sort_index=0; ?>)">cover</th>
+		<?php $sort_index = -1; ?>
+		<th onclick="sortTable(<?php echo ++$sort_index; ?>)">cover</th>
         <th onclick="sortTable(<?php echo ++$sort_index; ?>)">file name</th>
         <th onclick="sortTable(<?php echo ++$sort_index; ?>)">video id</th>
         <th onclick="sortTable(<?php echo ++$sort_index; ?>)">title</th>
+		<th onclick="sortTable(<?php echo ++$sort_index; ?>)">subtitle</th>
         <th onclick="sortTable(<?php echo ++$sort_index; ?>)">bandwidth</th>
         <th onclick="sortTable(<?php echo ++$sort_index; ?>)">resolution</th>
         <th onclick="sortTable(<?php echo ++$sort_index; ?>)">current file size</th>
@@ -121,7 +123,7 @@ Refresh:
     </tr>
     </thead>
     <?php
-    error_reporting(E_ALL & ~E_NOTICE);
+    error_reporting(E_ALL & ~E_NOTICE & ~E_WARNING);
     date_default_timezone_set('Asia/Tehran');
     $base_path = 'download/';
     $files = array_filter(glob($base_path . '*.log', GLOB_BRACE), 'is_file');
@@ -136,6 +138,7 @@ Refresh:
         $filename_video = $dirname . DIRECTORY_SEPARATOR . $filename . '.mp4';
         $filename_info = $dirname . DIRECTORY_SEPARATOR . $filename . '.info';
 		$filename_cover = $dirname . DIRECTORY_SEPARATOR . $filename . '.jpg';
+		$filename_subtitle = $dirname . DIRECTORY_SEPARATOR . $filename . '.srt';
 
         $modified_date = date('Y-m-d H:i:s', filemtime($filename_log));
         if (is_file($filename_video)) {
@@ -152,6 +155,7 @@ Refresh:
 
         echo "<td>{$info->video_id}</td>\n";
         echo "<td style='direction:rtl;'><a href='{$info->page_url}' target='_blank'>{$info->title}</a></td>\n";
+		echo "<td>" . (file_exists($filename_subtitle) ? "<a href='$filename_subtitle' target='_blank'>download</a>" : "") . "</td>\n";
         echo "<td>{$info->bandwidth}</td>\n";
         echo "<td>{$info->resolution}</td>\n";
         echo "<td>{$filesize}</td>\n";
