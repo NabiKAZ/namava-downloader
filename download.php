@@ -59,8 +59,8 @@ if (!isset($match[1])) {
 $title = $match[1];
 echo "Title: $title\n";
 
-preg_match('/<img class="img-border img-style" src="(.*?)".*\/>/', $contents, $match);
-$cover = 'https://www.namava.ir' . $match[1];
+preg_match('/<img class="img-border img-style" src="(.*?)\?.*\/>/', $contents, $match);
+$cover = $match[1];
 
 echo "===========================================================\n";
 
