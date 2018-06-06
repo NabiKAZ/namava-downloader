@@ -75,14 +75,14 @@ if (isset($match_subtitle[1])) {
 preg_match('/file:\'(.*?)\',/', $contents_watch, $match);
 $m3u8_url = $match[1];
 $contents = get_contents($m3u8_url);
-preg_match_all('/#.*BANDWIDTH=(.*), RESOLUTION=(.*)\r\n(.*)\r\n/', $contents, $matches);
+preg_match_all('/#.*BANDWIDTH=(.*?),RESOLUTION=(.*?),.*\n(.*?)\n/', $contents, $matches);
 
 $qualities = array();
 foreach ($matches[1] as $key => $value) {
     $qualities[] = array(
         'bandwidth' => $matches[1][$key],
         'resolution' => $matches[2][$key],
-        'url' => pathinfo($m3u8_url, PATHINFO_DIRNAME) . '/' . $matches[3][$key],
+        'url' => $matches[3][$key],
     );
 }
 
