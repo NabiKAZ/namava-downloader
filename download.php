@@ -46,8 +46,9 @@ if ($fullname != '') {
 }
 echo "===========================================================\n";
 
-echo "Input Video ID: ";
+echo "Input Video URL: ";
 $video_id = trim(fgets(STDIN));
+$video_id = explode("/",$video_id)[4];
 
 $domain = 'https://www.namava.ir';
 $page_url = $domain . '/1/1/' . $video_id;
