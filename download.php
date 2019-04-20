@@ -154,6 +154,7 @@ function get_contents($url, $data = null)
     curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
     curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+	curl_setopt($ch, CURLOPT_ENCODING, 'gzip, deflate');
     curl_setopt($ch, CURLOPT_COOKIEJAR, $config_path . 'cookies.txt');
     curl_setopt($ch, CURLOPT_COOKIEFILE, $config_path . 'cookies.txt');
     if (isset($proxy) && $proxy) {
