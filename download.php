@@ -1,4 +1,7 @@
 <?php
+
+if (php_sapi_name() !== "cli") exit("403");
+
 echo "Namava Downloader - version 0.1.0 - Copyright 2017\n";
 echo "By Nabi KaramAliZadeh <www.nabi.ir> <nabikaz@gmail.com>\n";
 echo "Signup here: https://www.namava.ir/\n";
