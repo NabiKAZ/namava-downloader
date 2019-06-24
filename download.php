@@ -52,7 +52,7 @@ $video_id = trim(fgets(STDIN));
 $domain = 'https://www.namava.ir';
 $page_url = $domain . '/1/1/' . $video_id;
 $contents = get_contents($page_url);
-preg_match('/<h1.*id="post-name">(.*?)<\/h1>/', $contents, $match);
+preg_match('/<div.*id="post-name">(.*?)<\/div>/', $contents, $match);
 if (!isset($match[1])) {
     die("\nSorry! Not found any video with this ID.\n");
 }
