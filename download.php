@@ -67,16 +67,16 @@ $cover = $match[1];
 
 echo "===========================================================\n";
 
-$contents_watch = get_contents('https://www.namava.ir/play/' . $video_id);
+$contents_watch = get_contents('https://www.namava.ir/api2/movie/' . $video_id);
+$contents_watch = json_decode($contents_watch);
 
 $subtitle = null;
-preg_match('/{"file":"([^}]+?)"[^}]+Farsi[^}]+?}/', $contents_watch, $match_subtitle);
-if (isset($match_subtitle[1])) {
-    $subtitle = $match_subtitle[1];
+$key = array_search('Farsi.srt', array_column($contents_watch->MediaInfoModel->Tracks, 'Label'));
+if (isset($contents_watch->MediaInfoModel->Tracks[$key]->FileFullName)) {
+    $subtitle = $contents_watch->MediaInfoModel->Tracks[$key]->FileFullName;
 }
 
-preg_match('/file:\'(.*?)\',/', $contents_watch, $match);
-$m3u8_url = $match[1];
+$m3u8_url = $contents_watch->MediaInfoModel->Domain . $contents_watch->MediaInfoModel->File;
 $contents = get_contents($m3u8_url);
 preg_match_all('/#.*BANDWIDTH=(.*?),RESOLUTION=(.*?),.*\n(.*?)\n/', $contents, $matches);
 
@@ -107,7 +107,7 @@ if (isset($proxy) && $proxy) {
 } else {
     $cmd_proxy = '';
 }
-$cmd = 'ffmpeg ' . $cmd_proxy . ' -i "' . $qualities[$input]['url'] . '" -c copy -y "' . $video_file . '"';
+$cmd = 'ffmpeg -headers "User-Agent: "' . $cmd_proxy . ' -i "' . $qualities[$input]['url'] . '" -c copy -y "' . $video_file . '"';
 $log_file = $base_path . $file_name . '.log';
 $info_file = $base_path . $file_name . '.info';
 $cover_file = $base_path . $file_name . '.jpg';
@@ -172,7 +172,7 @@ function get_contents($url, $data = null)
         'Upgrade-Insecure-Requests: 1',
         'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.84 Safari/537.36',
         'Content-Type: application/x-www-form-urlencoded',
-        'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+        'Accept: text/html,application/xhtml+xml,application/xml,application/json, text/plain;q=0.9,image/webp,image/apng,*/*;q=0.8',
         'Cache-Control: max-age=0',
         'Referer: https://www.namava.ir/Authentication/PostLogin?redirectTo=https%3A%2F%2Fwww.namava.ir%2Fuser%2Fprofile',
         'Proxy-Connection: keep-alive',
