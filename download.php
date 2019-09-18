@@ -15,7 +15,8 @@ $proxy = '';
 login:
 @mkdir($config_path);
 $contents = get_contents('https://www.namava.ir/');
-preg_match('/<span class="hidden-xs margin-left-5">\r\n(.*?)\r\n.*<\/span>/', $contents, $match);
+$contents = str_replace(array("\r\n", "\n\r", "\r", "\n"), '', $contents);
+preg_match('/<span class="hidden-xs margin-left-5">(.*?)<\/span>/', $contents, $match);
 $fullname = trim(@$match[1]);
 if ($fullname != '') {
     echo "Your username: $fullname\n";
