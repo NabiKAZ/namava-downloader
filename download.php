@@ -8,56 +8,89 @@ echo "Signup here: https://www.namava.ir/\n";
 echo "Project link: https://github.com/NabiKAZ/namava-downloader\n";
 echo "===========================================================\n";
 
+
+////////////////////////////////////////////
+///
+///     INIT
+///
+///
+
 $config_path = 'config/';
 $base_path = 'download/';
 $proxy = '';
 
-login:
-@mkdir($config_path);
-$contents = get_contents('https://www.namava.ir/');
-$contents = str_replace(array("\r\n", "\n\r", "\r", "\n"), '', $contents);
-preg_match('/<span class="hidden-xs margin-left-5">(.*?)<\/span>/', $contents, $match);
-$fullname = trim(@$match[1]);
-if ($fullname != '') {
-    echo "Your username: $fullname\n";
-} else {
-    echo "> Login to namava.ir\n";
-    echo "Input username: ";
-    $username = trim(fgets(STDIN));
-    echo "Input password: ";
-    $password = trim(fgets(STDIN));
-    echo "Logging...\n";
-    preg_match('/<input name="__RequestVerificationToken" type="hidden" value="(.*?)" \/>/', $contents, $match);
-    $token = $match[1];
-    $post_data = array(
-        '__RequestVerificationToken' => $token,
-        'Username' => $username,
-        'Password' => $password,
-        'Remember' => 'true',
-        'Item1.Remember' => 'false',
-        'redirectTo' => 'https://www.namava.ir/user/profile',
-    );
-    $contents = get_contents('https://www.namava.ir/Authentication/PostLogin?redirectTo=https://www.namava.ir/user/profile', $post_data);
-    preg_match('/<div class="alert alert-danger">(.*?)<\/div>/', $contents, $match);
-    if (isset($match[1])) {
-        die("Error: " . $match[1] . "\n");
-    } else {
+    // custom user-agent for ffmpeg request
+    // change this user-agent if this user agent blocked from namava.ir
+$customFFMpegUserAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)';
+
+
+if(is_dir($config_path) == false)
+    mkdir($config_path, 0777, true);
+
+if(is_dir($base_path) == false)
+    mkdir($base_path, 0777, true);
+
+
+////////////////////////////////////////////
+///
+/// LOGIN
+///
+do{
+    $contents = get_contents('https://www.namava.ir/');
+    $contents = str_replace(array("\r\n", "\n\r", "\r", "\n"), '', $contents);
+    preg_match('/<span class="hidden-xs margin-left-5">(.*?)<\/span>/', $contents, $match);
+    $fullname = trim(@$match[1]);
+    if ($fullname != '') {
         echo "Logged In.\n";
         echo "IMPORTANT: Your private cookies is stored in the '$config_path' directory, Be careful about its security!\n";
+        echo "---> Your username: $fullname\n";
         echo "===========================================================\n";
-        goto login;
+        break;
+    } else {
+        echo "> Login to namava.ir\n";
+        echo "Input username <Empty For End>: ";
+        $username = trim(fgets(STDIN));
+
+        // Exit if user name is empty
+        if($username == false)
+            die("Bye!\n");
+
+        echo "\n";
+        echo "                Input password: ";
+        $password = trim(fgets(STDIN));
+
+        echo "Logging...\n";
+        preg_match('/<input name="__RequestVerificationToken" type="hidden" value="(.*?)" \/>/', $contents, $match);
+        $token = $match[1];
+        $post_data = array(
+            '__RequestVerificationToken' => $token,
+            'Username' => $username,
+            'Password' => $password,
+            'Remember' => 'true',
+            'Item1.Remember' => 'false',
+            'redirectTo' => 'https://www.namava.ir/user/profile',
+        );
+        $contents = get_contents('https://www.namava.ir/Authentication/PostLogin?redirectTo=https://www.namava.ir/user/profile', $post_data);
+        preg_match('/<div class="alert alert-danger">(.*?)<\/div>/', $contents, $match);
+        if (isset($match[1])) {
+            echo ("Error: " . $match[1] . "\n");
+        }
     }
-}
+}while(true);
+
+
 echo "===========================================================\n";
 
 echo "Input Video ID: ";
 $video_id = trim(fgets(STDIN));
 
+
 $domain = 'https://www.namava.ir';
 $page_url = $domain . '/1/1/' . $video_id;
 $contents = get_contents($page_url);
 preg_match('/<div.*id="post-name">(.*?)<\/div>/', $contents, $match);
-if (!isset($match[1])) {
+if (!isset($match[1]))
+{
     die("\nSorry! Not found any video with this ID.\n");
 }
 $title = $match[1];
@@ -68,21 +101,30 @@ $cover = $match[1];
 
 echo "===========================================================\n";
 
-$contents_watch = get_contents('https://www.namava.ir/api2/movie/' . $video_id);
-$contents_watch = json_decode($contents_watch);
+$contents_watch = get_contents('https://www.namava.ir/play/' . $video_id);
 
 $subtitle = null;
-$key = array_search('Farsi.srt', array_column($contents_watch->MediaInfoModel->Tracks, 'Label'));
-if (isset($contents_watch->MediaInfoModel->Tracks[$key]->FileFullName)) {
-    $subtitle = $contents_watch->MediaInfoModel->Tracks[$key]->FileFullName;
+preg_match('/{"file":"([^}]+?)"[^}]+Farsi[^}]+?}/', $contents_watch, $match_subtitle);
+if (isset($match_subtitle[1]))
+{
+    $subtitle = $match_subtitle[1];
 }
 
-$m3u8_url = $contents_watch->MediaInfoModel->Domain . $contents_watch->MediaInfoModel->File;
+preg_match('/file:\'(.*?)\',/', $contents_watch, $match);
+
+if (!isset($match[1]))
+{
+    file_put_contents('test.html', $contents_watch);
+    die("\nSorry! Not found any resolution in m3u file.\n");
+}
+
+$m3u8_url = $match[1];
 $contents = get_contents($m3u8_url);
 preg_match_all('/#.*BANDWIDTH=(.*?),RESOLUTION=(.*?),.*\n(.*?)\n/', $contents, $matches);
 
 $qualities = array();
-foreach ($matches[1] as $key => $value) {
+foreach ($matches[1] as $key => $value)
+{
     $qualities[] = array(
         'bandwidth' => $matches[1][$key],
         'resolution' => $matches[2][$key],
@@ -94,21 +136,35 @@ $qualities = multisort($qualities, 'bandwidth', SORT_ASC);
 $qualities = array_combine(range(1, count($qualities)), array_values($qualities));
 
 echo "Select Quality:\n";
-foreach ($qualities as $key => $value) {
+foreach ($qualities as $key => $value)
+{
     echo $key . ") BANDWIDTH=" . $value['bandwidth'] . " - RESOLUTION=" . $value['resolution'] . "\n";
 }
+
 echo "Input option number: ";
 $input = trim(fgets(STDIN));
 
-@mkdir($base_path);
+if ($input == '')
+    $input = 1;
+
 $file_name = $video_id . '_' . $qualities[$input]['bandwidth'];
 $video_file = $base_path . $file_name . '.mp4';
-if (isset($proxy) && $proxy) {
+
+$cmd_proxy = '';
+if (isset($proxy) && $proxy)
+{
     $cmd_proxy = '-http_proxy http://' . $proxy;
-} else {
-    $cmd_proxy = '';
 }
-$cmd = 'ffmpeg -headers "User-Agent: "' . $cmd_proxy . ' -i "' . $qualities[$input]['url'] . '" -c copy -y "' . $video_file . '"';
+
+$ffmpegUserAgentCommand = '';
+if($customFFMpegUserAgent != false)
+{
+    $ffmpegUserAgentCommand = ' -user_agent "' . $customFFMpegUserAgent . '" ';
+}
+
+$video_m3u = $qualities[$input]['url'];
+
+$cmd = 'ffmpeg ' . $ffmpegUserAgentCommand . ' ' . $cmd_proxy . ' -i "' . $video_m3u . '" -c copy -y "' . $video_file . '"';
 $log_file = $base_path . $file_name . '.log';
 $info_file = $base_path . $file_name . '.info';
 $cover_file = $base_path . $file_name . '.jpg';
@@ -123,18 +179,29 @@ $info['resolution'] = $qualities[$input]['resolution'];
 $info = json_encode($info);
 file_put_contents($info_file, $info);
 
-if ($cover) {
-	file_put_contents($cover_file, get_contents($cover));
+$selectedResolution = $qualities[$input]['resolution'];
+
+if ($cover)
+{
+    file_put_contents($cover_file, get_contents($cover));
 }
 
-if ($subtitle) {
+if ($subtitle)
+{
     file_put_contents($subtitle_file, normalize_subtitle(get_contents($subtitle)));
 }
 
-if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-    pclose(popen('start /B ' . $cmd . '<nul >nul 2>"' . $log_file . '"', 'r'));
-} else {
-    shell_exec($cmd . '</dev/null >/dev/null 2>"' . $log_file . '" &');
+if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN')
+{
+    $command = 'start /B ' . $cmd . '<nul >nul 2>"' . $log_file . '"';
+
+    pclose(popen($command, 'r'));
+}
+else
+{
+    $command = $cmd . '</dev/null >/dev/null 2>"' . $log_file . '" &';
+
+    shell_exec($command);
 }
 
 echo "===========================================================\n";
@@ -149,9 +216,16 @@ echo "For stop process, kill it.\n";
 echo "Bye!\n";
 
 
+/////////////////////////////////////////////////////////////////
+///
+///
+///     FUNCTIONS
+///
+///
+
 function get_contents($url, $data = null)
 {
-    global $config_path;
+    global $config_path,$proxy;
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, $url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -159,8 +233,18 @@ function get_contents($url, $data = null)
     curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
 	curl_setopt($ch, CURLOPT_ENCODING, 'gzip, deflate');
+
+	// for deflate response body
+    curl_setopt($ch,CURLOPT_ENCODING , '');
+
+    curl_setopt($ch, CURLOPT_HEADER, 1);
+
+    // add this cookie for switch to last version of namava
+    curl_setopt($ch, CURLOPT_COOKIE, 'namavaenv=legacy;');
+
     curl_setopt($ch, CURLOPT_COOKIEJAR, $config_path . 'cookies.txt');
     curl_setopt($ch, CURLOPT_COOKIEFILE, $config_path . 'cookies.txt');
+
     if (isset($proxy) && $proxy) {
         list($proxyIp, $proxyPort) = explode(':', $proxy);
         curl_setopt($ch, CURLOPT_PROXY, $proxyIp);
@@ -178,11 +262,20 @@ function get_contents($url, $data = null)
         'Referer: https://www.namava.ir/Authentication/PostLogin?redirectTo=https%3A%2F%2Fwww.namava.ir%2Fuser%2Fprofile',
         'Proxy-Connection: keep-alive',
     ));
+
+
     if ($data !== null) {
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data));
     }
-    return curl_exec($ch);
+
+    $response = curl_exec($ch);
+
+    // Get Response Header for debug...
+    $header_size = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
+    $header = substr($response, 0, $header_size);
+    $body = substr($response, $header_size);
+    return $body;
 }
 
 function multisort($mdarray, $mdkey, $sort = SORT_ASC)
