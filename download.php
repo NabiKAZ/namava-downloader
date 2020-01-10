@@ -14,10 +14,9 @@ $proxy = '';
 
 login:
 @mkdir($config_path);
-$contents = get_contents('https://www.namava.ir/');
-$contents = str_replace(array("\r\n", "\n\r", "\r", "\n"), '', $contents);
-preg_match('/<span class="hidden-xs margin-left-5">(.*?)<\/span>/', $contents, $match);
-$fullname = trim(@$match[1]);
+$contents = get_contents('https://www.namava.ir/api/v1.0/users/info');
+$results = json_decode($contents);
+$fullname = trim(@$results->result->firstName . ' ' . @$results->result->lastName);
 if ($fullname != '') {
     echo "Your username: $fullname\n";
 } else {
@@ -27,20 +26,14 @@ if ($fullname != '') {
     echo "Input password: ";
     $password = trim(fgets(STDIN));
     echo "Logging...\n";
-    preg_match('/<input name="__RequestVerificationToken" type="hidden" value="(.*?)" \/>/', $contents, $match);
-    $token = $match[1];
     $post_data = array(
-        '__RequestVerificationToken' => $token,
-        'Username' => $username,
+        'UserName' => $username,
         'Password' => $password,
-        'Remember' => 'true',
-        'Item1.Remember' => 'false',
-        'redirectTo' => 'https://www.namava.ir/user/profile',
     );
-    $contents = get_contents('https://www.namava.ir/Authentication/PostLogin?redirectTo=https://www.namava.ir/user/profile', $post_data);
-    preg_match('/<div class="alert alert-danger">(.*?)<\/div>/', $contents, $match);
-    if (isset($match[1])) {
-        die("Error: " . $match[1] . "\n");
+    $contents = get_contents('https://www.namava.ir/api/v1.0/accounts/by-phone/login', $post_data);
+    $results = json_decode($contents);
+    if ($results->succeeded == false) {
+        die("Error: " . $results->error->message . "\n");
     } else {
         echo "Logged In.\n";
         echo "IMPORTANT: Your private cookies is stored in the '$config_path' directory, Be careful about its security!\n";
@@ -53,31 +46,24 @@ echo "===========================================================\n";
 echo "Input Video ID: ";
 $video_id = trim(fgets(STDIN));
 
-$domain = 'https://www.namava.ir';
-$page_url = $domain . '/1/1/' . $video_id;
-$contents = get_contents($page_url);
-preg_match('/<div.*id="post-name">(.*?)<\/div>/', $contents, $match);
-if (!isset($match[1])) {
+$contents = get_contents('https://www.namava.ir/api2/movie/' . $video_id);
+$results = json_decode($contents);
+if (!isset($results->Name)) {
     die("\nSorry! Not found any video with this ID.\n");
 }
-$title = $match[1];
+$title = $results->Name;
 echo "Title: $title\n";
-
-preg_match('/<img class="img-border img-style" src="(.*?)\?.*\/>/', $contents, $match);
-$cover = $match[1];
+$cover = $results->ImageAbsoluteUrl;
 
 echo "===========================================================\n";
 
-$contents_watch = get_contents('https://www.namava.ir/api2/movie/' . $video_id);
-$contents_watch = json_decode($contents_watch);
-
 $subtitle = null;
-$key = array_search('Farsi.srt', array_column($contents_watch->MediaInfoModel->Tracks, 'Label'));
-if (isset($contents_watch->MediaInfoModel->Tracks[$key]->FileFullName)) {
-    $subtitle = $contents_watch->MediaInfoModel->Tracks[$key]->FileFullName;
+$key = array_search('Farsi.srt', array_column($results->MediaInfoModel->Tracks, 'Label'));
+if ($key !== false && isset($results->MediaInfoModel->Tracks[$key]->FileFullName)) {
+    $subtitle = $results->MediaInfoModel->Tracks[$key]->FileFullName;
 }
 
-$m3u8_url = $contents_watch->MediaInfoModel->Domain . $contents_watch->MediaInfoModel->File;
+$m3u8_url = $results->MediaInfoModel->Domain . $results->MediaInfoModel->File;
 $contents = get_contents($m3u8_url);
 preg_match_all('/#.*BANDWIDTH=(.*?),RESOLUTION=(.*?),.*\n(.*?)\n/', $contents, $matches);
 
@@ -117,7 +103,6 @@ $subtitle_file = $base_path . $file_name . '.srt';
 $info = array();
 $info['video_id'] = $video_id;
 $info['title'] = $title;
-$info['page_url'] = $page_url;
 $info['bandwidth'] = $qualities[$input]['bandwidth'];
 $info['resolution'] = $qualities[$input]['resolution'];
 $info = json_encode($info);
@@ -151,7 +136,7 @@ echo "Bye!\n";
 
 function get_contents($url, $data = null)
 {
-    global $config_path;
+    global $config_path, $proxy;
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, $url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -167,20 +152,21 @@ function get_contents($url, $data = null)
         curl_setopt($ch, CURLOPT_PROXYPORT, $proxyPort);
     }
     curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+        'Authority: www.namava.ir',
+        'Accept: application/json, text/plain, */*',
+        'X-Application-Type: WebClient',
+        'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.88 Safari/537.36',
+        'Content-Type: application/json;charset=UTF-8',
         'Origin: https://www.namava.ir',
-        'Accept-Encoding: gzip, deflate',
-        'Accept-Language: en-US,en;q=0.9',
-        'Upgrade-Insecure-Requests: 1',
-        'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.84 Safari/537.36',
-        'Content-Type: application/x-www-form-urlencoded',
-        'Accept: text/html,application/xhtml+xml,application/xml,application/json, text/plain;q=0.9,image/webp,image/apng,*/*;q=0.8',
-        'Cache-Control: max-age=0',
-        'Referer: https://www.namava.ir/Authentication/PostLogin?redirectTo=https%3A%2F%2Fwww.namava.ir%2Fuser%2Fprofile',
-        'Proxy-Connection: keep-alive',
+        'Sec-Fetch-Site: same-origin',
+        'Sec-Fetch-Mode: cors',
+        'Referer: https://www.namava.ir/auth/login-phone',
+        'Accept-Encoding: gzip, deflate, br',
+        'Accept-Language: en-US,en;q=0.9,fa;q=0.8',
     ));
     if ($data !== null) {
         curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data));
+		curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
     }
     return curl_exec($ch);
 }

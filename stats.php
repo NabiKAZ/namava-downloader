@@ -157,7 +157,7 @@ Refresh:
         $info = json_decode($content);
 
         echo "<td>{$info->video_id}</td>\n";
-        echo "<td style='direction:rtl;'><a href='{$info->page_url}' target='_blank'>{$info->title}</a></td>\n";
+        echo "<td style='direction:rtl;'><a href='https://www.namava.ir/1/1/{$info->video_id}' target='_blank'>{$info->title}</a></td>\n";
 		echo "<td>" . (file_exists($filename_subtitle) ? "<a href='$filename_subtitle' target='_blank'>download</a>" : "") . "</td>\n";
         echo "<td>{$info->bandwidth}</td>\n";
         echo "<td>{$info->resolution}</td>\n";
