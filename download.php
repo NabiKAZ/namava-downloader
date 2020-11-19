@@ -23,6 +23,16 @@ if ($fullname != '') {
     echo "> Login to namava.ir\n";
     echo "Input username: ";
     $username = trim(fgets(STDIN));
+	$username = str_replace(array(' ', '.', '-'), '', $username);
+	if (substr($username, 0, 2) == '00') {
+		$username = '+98' . substr($username, 4);
+	}
+	if (substr($username, 0, 1) == '0') {
+		$username = '+98' . substr($username, 1);
+	}
+	if (substr($username, 0, 1) != '+') {
+		$username = '+98' . $username;
+	}
     echo "Input password: ";
     $password = trim(fgets(STDIN));
     echo "Logging...\n";
