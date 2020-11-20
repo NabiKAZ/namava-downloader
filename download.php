@@ -1,12 +1,17 @@
 <?php
-
-if (php_sapi_name() !== "cli") exit("403");
+if (php_sapi_name() !== "cli") {
+	exit('ERROR: This program does not run on the browser and only runs under the command line.');
+}
 
 echo "Namava Downloader - version 0.1.0 - Copyright 2017\n";
 echo "By Nabi KaramAliZadeh <www.nabi.ir> <nabikaz@gmail.com>\n";
 echo "Signup here: https://www.namava.ir/\n";
 echo "Project link: https://github.com/NabiKAZ/namava-downloader\n";
 echo "===========================================================\n";
+
+if (!extension_loaded('curl')) {
+	exit(PHP_EOL . 'ERROR: The CURL module is not enabled for PHP. More tips: https://github.com/NabiKAZ/namava-downloader/issues/63' . PHP_EOL);
+}
 
 $config_path = 'config/';
 $base_path = 'download/';
