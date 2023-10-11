@@ -72,10 +72,12 @@ $cover = $results->ImageAbsoluteUrl;
 
 echo "===========================================================\n";
 
-$subtitle = null;
-$key = array_search('Farsi.srt', array_column($results->MediaInfoModel->Tracks, 'Label'));
-if ($key !== false && isset($results->MediaInfoModel->Tracks[$key]->FileFullName)) {
-    $subtitle = $results->MediaInfoModel->Tracks[$key]->FileFullName;
+$subtitles = [];
+foreach ($results->MediaInfoModel->Tracks as $track) {
+	if ($track->Kind == 'captions') {
+		$key = strtolower(substr($track->Label, 0, strrpos($track->Label, '.')));
+		$subtitles[$key] = $track->FileFullName;
+	}
 }
 
 $m3u8_url = $results->MediaInfoModel->Domain . $results->MediaInfoModel->File;
@@ -113,7 +115,7 @@ $cmd = 'ffmpeg -headers "User-Agent: "' . $cmd_proxy . ' -i "' . $qualities[$inp
 $log_file = $base_path . $file_name . '.log';
 $info_file = $base_path . $file_name . '.info';
 $cover_file = $base_path . $file_name . '.jpg';
-$subtitle_file = $base_path . $file_name . '.srt';
+$subtitle_file = $base_path . $file_name . '_{lang}.srt';
 
 $info = array();
 $info['video_id'] = $video_id;
@@ -127,8 +129,11 @@ if ($cover) {
 	file_put_contents($cover_file, get_contents($cover));
 }
 
-if ($subtitle) {
-    file_put_contents($subtitle_file, normalize_subtitle(get_contents($subtitle)));
+if ($subtitles) {
+	foreach ($subtitles as $lang => $subtitle) {
+		$subtitle_filename = str_replace('{lang}', $lang, $subtitle_file);
+		file_put_contents($subtitle_filename, normalize_subtitle(get_contents($subtitle)));
+	}
 }
 
 if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
@@ -140,7 +145,7 @@ if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
 echo "===========================================================\n";
 echo "Video file: $video_file\n";
 echo "Cover file: " . ($cover ? $cover_file : 'N/A') . "\n";
-echo "Subtitle file: " . ($subtitle ? $subtitle_file : 'N/A') . "\n";
+echo "Subtitle file: " . ($subtitles ? $subtitle_file : 'N/A') . "\n";
 echo "Log file: $log_file\n";
 echo "Info file: $info_file\n";
 echo "Start downloading in the background...\n";
